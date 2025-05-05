@@ -15,6 +15,9 @@
 import sounddevice as sd
 import soundfile as sf
 from pysilero import VADIterator
+import time
+from chat_llm_client import chat
+import sys
 
 from streaming_sensevoice import StreamingSenseVoice
 
@@ -32,17 +35,27 @@ def main():
     print(f'Use default device: {devices[default_input_device_idx]["name"]}')
 
     samples_per_read = int(0.1 * 16000)
+    last_time = time.time()
+    submited = True
+    sentence = ""
     with sd.InputStream(channels=1, dtype="float32", samplerate=16000) as s:
         while True:
+            now_time = time.time()
+            if now_time - last_time > 1.5 and not submited:
+                submited = True
+                if sentence:
+                    # print(sentence)
+                    print(chat(sentence))
             samples, _ = s.read(samples_per_read)
             for speech_dict, speech_samples in vad_iterator(samples[:, 0]):
                 if "start" in speech_dict:
                     model.reset()
                 is_last = "end" in speech_dict
                 for res in model.streaming_inference(speech_samples * 32768, is_last):
-                    sf.write("test.wav", vad_iterator.speech_samples, 16000)
-                    print(res["timestamps"])
-                    print(res["text"])
+                    # now_time = time.time()
+                    sentence = res["text"]
+                    last_time = now_time
+                    submited = False
 
 
 if __name__ == "__main__":
