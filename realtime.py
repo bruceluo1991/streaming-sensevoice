@@ -17,6 +17,7 @@ import soundfile as sf
 from pysilero import VADIterator
 import time
 from chat_llm_client import chat
+from tts_client import get_and_play_synthesize
 import sys
 
 from streaming_sensevoice import StreamingSenseVoice
@@ -45,7 +46,9 @@ def main():
                 submited = True
                 if sentence:
                     # print(sentence)
-                    print(chat(sentence))
+                    chat_res_str = chat(sentence)
+                    print(chat_res_str)
+                    get_and_play_synthesize(chat_res_str)
             samples, _ = s.read(samples_per_read)
             for speech_dict, speech_samples in vad_iterator(samples[:, 0]):
                 if "start" in speech_dict:
